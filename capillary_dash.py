@@ -143,4 +143,4 @@ def update_graphs(h_cm):
 import os
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug
+    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)))
