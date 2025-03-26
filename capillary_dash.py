@@ -3,7 +3,6 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import numpy as np
 import plotly.graph_objs as go
-import os
 
 app = dash.Dash(__name__)
 app.title = "Water vs Mercury Meniscus"
@@ -39,7 +38,7 @@ app.layout = html.Div([
             id='height-slider',
             min=0,
             max=3.0,
-            step=0.05,
+            step=0.005,
             value=1.0,
             marks={i: f"{i} cm" for i in np.arange(0, 3.1, 0.5)},
             tooltip={"placement": "bottom", "always_visible": True}
@@ -49,16 +48,13 @@ app.layout = html.Div([
     html.Div([
         dcc.Graph(id='meniscus-graph', style={"width": "50%", "display": "inline-block"}),
         dcc.Graph(id='theta-vs-height-graph', style={"width": "48%", "display": "inline-block"})
-    ]),
-
-    html.Div(id='info-panel', style={"textAlign": "center", "marginTop": "30px", "fontSize": "18px"})
+    ])
 ])
 
-# Callback to update meniscus view, theta-height graph, and info panel
+# Callback to update meniscus view and theta-height graph
 @app.callback(
     [Output('meniscus-graph', 'figure'),
-     Output('theta-vs-height-graph', 'figure'),
-     Output('info-panel', 'children')],
+     Output('theta-vs-height-graph', 'figure')],
     Input('height-slider', 'value')
 )
 def update_graphs(h_cm):
@@ -70,8 +66,7 @@ def update_graphs(h_cm):
     tube_spacing = 0.15
     base_shift = 0.45
 
-    info_blocks = []
-
+    # Meniscus rendering
     for i, (name, props) in enumerate(fluids.items()):
         rho, gamma, color = props['rho'], props['gamma'], props['color']
         theta_deg = height_to_theta(h_cm, rho, gamma)
@@ -100,14 +95,6 @@ def update_graphs(h_cm):
             name=f"{name} θ = {theta_deg:.1f}°"
         ))
 
-        info_blocks.append(html.Div([
-            html.H3(f"{name} θ = {theta_deg:.1f}°", style={"fontSize": "28px"}),
-            html.P(f"r = {r*1000:.1f} mm"),
-            html.P(f"Surface tension γ = {gamma} N/m"),
-            html.P(f"Density ρ = {rho} kg/m³"),
-            html.P(f"g = {g} m/s²")
-        ], style={"margin": "20px", "display": "inline-block", "width": "45%"}))
-
     fig_meniscus.update_layout(
         title=f"Capillary Height: {h_cm:.2f} cm",
         xaxis=dict(showticklabels=False, fixedrange=True),
@@ -117,6 +104,7 @@ def update_graphs(h_cm):
         legend=dict(x=1.05, y=1.05)
     )
 
+    # θ vs height graph
     h_vals = np.linspace(0, 3.0, 200)
     fig_theta = go.Figure()
     for name, props in fluids.items():
@@ -125,16 +113,23 @@ def update_graphs(h_cm):
             x=h_vals, y=theta_vals, mode='lines', name=name, line=dict(color=props['color'])
         ))
 
-    for name, color in [('Water', 'blue'), ('Mercury', 'gray')]:
-        fig_theta.add_trace(go.Scatter(
-            x=[h_cm],
-            y=[height_to_theta(h_cm, fluids[name]['rho'], fluids[name]['gamma'])],
-            mode='markers+text',
-            name=f'{name} θ',
-            marker=dict(color=color, size=10),
-            text=[f"θ = {height_to_theta(h_cm, fluids[name]['rho'], fluids[name]['gamma']):.1f}°"],
-            textposition="top center"
-        ))
+    fig_theta.add_trace(go.Scatter(
+        x=[h_cm],
+        y=[height_to_theta(h_cm, fluids['Water']['rho'], fluids['Water']['gamma'])],
+        mode='markers+text', name='Water θ',
+        marker=dict(color='blue', size=10),
+        text=[f"θ = {height_to_theta(h_cm, fluids['Water']['rho'], fluids['Water']['gamma']):.1f}°"],
+        textposition="top center"
+    ))
+
+    fig_theta.add_trace(go.Scatter(
+        x=[h_cm],
+        y=[height_to_theta(h_cm, fluids['Mercury']['rho'], fluids['Mercury']['gamma'])],
+        mode='markers+text', name='Mercury θ',
+        marker=dict(color='gray', size=10),
+        text=[f"θ = {height_to_theta(h_cm, fluids['Mercury']['rho'], fluids['Mercury']['gamma']):.1f}°"],
+        textposition="top center"
+    ))
 
     fig_theta.update_layout(
         xaxis_title="Capillary Height (cm)",
@@ -143,7 +138,9 @@ def update_graphs(h_cm):
         margin=dict(l=20, r=20, t=80, b=40)
     )
 
-    return fig_meniscus, fig_theta, info_blocks
+    return fig_meniscus, fig_theta
+
+import os
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=True)=True)
+    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug
