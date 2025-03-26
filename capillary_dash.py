@@ -42,6 +42,7 @@ app.layout = html.Div([
             value=1.0,
             marks={i: f"{i} cm" for i in np.arange(0, 3.1, 0.5)},
             tooltip={"placement": "bottom", "always_visible": True}
+            updatemode='drag'  # ← This is the key line
         )
     ], style={"width": "70%", "margin": "auto"}),
 
