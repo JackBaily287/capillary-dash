@@ -41,7 +41,8 @@ app.layout = html.Div([
             step=0.005,
             value=1.0,
             marks={i: f"{i} cm" for i in np.arange(0, 3.1, 0.5)},
-            tooltip={"placement": "bottom", "always_visible": True}
+            tooltip={"placement": "bottom", "always_visible": True},
+            updatemode='drag'  # This lets the animation update while sliding
         )
     ], style={"width": "70%", "margin": "auto"}),
 
