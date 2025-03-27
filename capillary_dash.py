@@ -44,11 +44,12 @@ app.layout = html.Div([
             updatemode='drag'
         ),
 
-        dcc.Slider(  # Hidden slider (release)
-            id='height-slider-release',
-            min=0, max=3.0, step=0.005, value=1.0,
-            style={'display': 'none'}
-        )
+        html.Div([
+            dcc.Slider(  # Hidden slider (release)
+                id='height-slider-release',
+                min=0, max=3.0, step=0.005, value=1.0,
+            )
+        ], style={'display': 'none'}
     ], style={"width": "70%", "margin": "auto"}),  # ← this ] is paired with html.Div([ above
 
     html.Div([
