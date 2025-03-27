@@ -35,6 +35,7 @@ app.layout = html.Div([
 
     html.Div([
         html.Label("Capillary Rise/Depression Height (cm):"),
+        html.Div(  # Apply style here instead
         dcc.Slider(
             id='height-slider-live',
             min=0,
@@ -66,15 +67,16 @@ app.layout = html.Div([
     Output('height-slider-release', 'value'),
     Input('height-slider-live', 'value')
 )
-def sync_on_release(val):
-    return val
+def sync_sliders(live_value):
+    return live_value
 
 # Update meniscus graph live
 @app.callback(
-    Output('meniscus-graph', 'figure'),
-    Input('height-slider-live', 'value')
+    [Output('meniscus-graph', 'figure'),
+     Output('theta-vs-height-graph', 'figure')],
+    Input('height-slider-release', 'value')
 )
-def update_meniscus_graph(h_cm):
+def update_graphs(h_cm):
     fig_meniscus = go.Figure()
     tube_width = 0.10
     tube_height = 2.5
