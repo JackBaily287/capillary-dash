@@ -3,7 +3,6 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import numpy as np
 import plotly.graph_objs as go
-import os
 
 app = dash.Dash(__name__)
 app.title = "Water vs Mercury Meniscus"
@@ -22,7 +21,7 @@ fluids = {
 def height_to_theta(h_cm, rho, gamma):
     h = h_cm / 100  # convert to meters
     cos_theta = (h * rho * g * r) / (2 * gamma)
-    cos_theta = np.clip(cos_theta, -1, 1)
+    cos_theta = np.clip(cos_theta, -1, 1)  # keep within valid range
     theta_rad = np.arccos(cos_theta)
     return np.degrees(theta_rad)
 
@@ -35,22 +34,16 @@ app.layout = html.Div([
 
     html.Div([
         html.Label("Capillary Rise/Depression Height (cm):"),
-
-        dcc.Slider(  # Live slider
-            id='height-slider-live',
-            min=0, max=3.0, step=0.005, value=1.0,
+        dcc.Slider(
+            id='height-slider',
+            min=0,
+            max=3.0,
+            step=0.05,
+            value=1.0,
             marks={i: f"{i} cm" for i in np.arange(0, 3.1, 0.5)},
-            tooltip={"placement": "bottom", "always_visible": True},
-            updatemode='drag'
-        ),
-
-        html.Div([
-            dcc.Slider(  # Hidden slider (release)
-                id='height-slider-release',
-                min=0, max=3.0, step=0.005, value=1.0,
-            )
-        ], style={'display': 'none'}
-    ], style={"width": "70%", "margin": "auto"}),  # ← this ] is paired with html.Div([ above
+            tooltip={"placement": "bottom", "always_visible": True}
+        )
+    ], style={"width": "70%", "margin": "auto"}),
 
     html.Div([
         dcc.Graph(id='meniscus-graph', style={"width": "50%", "display": "inline-block"}),
@@ -58,19 +51,11 @@ app.layout = html.Div([
     ])
 ])
 
-# Sync release-slider with live-slider (only updates on release)
-@app.callback(
-    Output('height-slider-release', 'value'),
-    Input('height-slider-live', 'value')
-)
-def sync_sliders(live_value):
-    return live_value
-
-# Update meniscus graph live
+# Callback to update meniscus view and theta-height graph
 @app.callback(
     [Output('meniscus-graph', 'figure'),
      Output('theta-vs-height-graph', 'figure')],
-    Input('height-slider-release', 'value')
+    Input('height-slider', 'value')
 )
 def update_graphs(h_cm):
     fig_meniscus = go.Figure()
@@ -81,6 +66,7 @@ def update_graphs(h_cm):
     tube_spacing = 0.15
     base_shift = 0.45
 
+    # Meniscus rendering
     for i, (name, props) in enumerate(fluids.items()):
         rho, gamma, color = props['rho'], props['gamma'], props['color']
         theta_deg = height_to_theta(h_cm, rho, gamma)
@@ -118,17 +104,9 @@ def update_graphs(h_cm):
         legend=dict(x=1.05, y=1.05)
     )
 
-    return fig_meniscus
-
-# Update theta graph only on release
-@app.callback(
-    Output('theta-vs-height-graph', 'figure'),
-    Input('height-slider-release', 'value')
-)
-def update_theta_graph(h_cm):
+    # θ vs height graph
     h_vals = np.linspace(0, 3.0, 200)
     fig_theta = go.Figure()
-
     for name, props in fluids.items():
         theta_vals = [height_to_theta(h, props['rho'], props['gamma']) for h in h_vals]
         fig_theta.add_trace(go.Scatter(
@@ -160,8 +138,9 @@ def update_theta_graph(h_cm):
         margin=dict(l=20, r=20, t=80, b=40)
     )
 
-    return fig_theta
+    return fig_meniscus, fig_theta
+
+import os
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=False)
-
+    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)))
